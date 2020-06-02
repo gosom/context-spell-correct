@@ -69,51 +69,32 @@ func TestGetSuggestionCandidates(t *testing.T) {
 
 	expected := []candidate{
 		// 0
-		candidate{[]string{"a", "2", "3"}, 0},
-		candidate{[]string{"aa", "2", "3"}, 0},
+		candidate{[]string{"a", "2", "3"}},
+		candidate{[]string{"aa", "2", "3"}},
 
 		// 1
-		candidate{[]string{"1", "b", "3"}, 0},
-		candidate{[]string{"a", "b", "3"}, 0},
-		candidate{[]string{"aa", "b", "3"}, 0},
+		candidate{[]string{"1", "b", "3"}},
+		candidate{[]string{"a", "b", "3"}},
+		candidate{[]string{"aa", "b", "3"}},
 	}
 
 	sc := getSpellCorrector()
 
-	dups := sc.getSuggestionCandidates(tokens, sugMap, len(tokens))
-
-	var candidates []candidate
-	for i := range dups {
-		found := false
-		for j := range candidates {
-			if candidatesEqual(dups[i], candidates[j]) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			candidates = append(candidates, dups[i])
-		}
-	}
-	fmt.Println(candidates)
+	candidates := sc.getSuggestionCandidates(tokens, sugMap)
 
 	if len(candidates) != len(expected) {
 		t.Errorf("invalid length")
 		return
 	}
 
+	expect := make(map[uint64]bool)
 	for i := range expected {
-		e := expected[i].tokens
-		a := candidates[i].tokens
-		if len(a) != len(e) {
-			t.Errorf("invalid len of tokens")
+		expect[hashCandidate(expected[i])] = true
+	}
+	for i := range candidates {
+		if !expect[hashCandidate(candidates[i])] {
+			t.Errorf("%v not in expected", candidates[i].tokens)
 			return
-		}
-		for j := range e {
-			if e[j] != a[j] {
-				t.Errorf("Token at %d (%s vs %s) differ", j, e[j], a[j])
-				return
-			}
 		}
 	}
 

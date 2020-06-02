@@ -3,6 +3,7 @@ package spellcorrect
 import (
 	"bufio"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"sort"
 	"strconv"
@@ -83,8 +84,15 @@ func (o *SpellCorrector) Train(in io.Reader, in2 io.Reader) error {
 }
 
 type candidate struct {
-	tokens        []string
-	misspelledPos int
+	tokens []string
+}
+
+func hashCandidate(item candidate) uint64 {
+	h := fnv.New64a()
+	for i := range item.tokens {
+		h.Write([]byte(item.tokens[i]))
+	}
+	return h.Sum64()
 }
 
 func candidatesEqual(a, b candidate) bool {
@@ -99,54 +107,56 @@ func candidatesEqual(a, b candidate) bool {
 	return true
 }
 
-func (o *SpellCorrector) getSuggestionCandidates(tokens []string, sugMap map[int]spell.SuggestionList, n int) []candidate {
-	// TODO Improve me
-	var candidates []candidate
-	if n == 0 {
-		return candidates
+func (o *SpellCorrector) generateCandidates(tokens []string, candidates map[uint64]candidate, n int,
+	sugMap map[int]spell.SuggestionList) {
+	if n == len(tokens) {
+		return
 	}
+
 	for i := 0; i < len(tokens); i++ {
 		suggestions := sugMap[i]
-		for j := range suggestions {
+		for _, sug := range suggestions {
 			b := append(tokens[:0:0], tokens...)
-			b[i] = suggestions[j].Word
+			b[i] = sug.Word
 			cand := candidate{tokens: b}
-			candidates = append(candidates, cand)
-			candidates = append(candidates, o.getSuggestionCandidates(b, sugMap, n-1)...)
+			candHash := hashCandidate(cand)
+			if _, ok := candidates[candHash]; !ok {
+				candidates[candHash] = cand
+			}
+			o.generateCandidates(b, candidates, n+1, sugMap)
 		}
+	}
+}
+
+func (o *SpellCorrector) getSuggestionCandidates(tokens []string, sugMap map[int]spell.SuggestionList) []candidate {
+
+	found := make(map[uint64]candidate)
+
+	o.generateCandidates(tokens, found, 0, sugMap)
+
+	candidates := make([]candidate, 0, len(found))
+	for _, v := range found {
+		candidates = append(candidates, v)
 	}
 	return candidates
 }
 
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	// TODO this code is bad -> improve
+	// maybe something more efficient
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions := make(map[int]spell.SuggestionList)
 	for i := range tokens {
 		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
 		allSuggestions[i] = suggestions
 	}
-	dups := o.getSuggestionCandidates(tokens, allSuggestions, len(tokens))
-	var candidates []candidate
-	for i := range dups {
-		found := false
-		for j := range candidates {
-			if candidatesEqual(dups[i], candidates[j]) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			candidates = append(candidates, dups[i])
-		}
-	}
+	candidates := o.getSuggestionCandidates(tokens, allSuggestions)
 
 	suggestions := o.rank(candidates)
 	return suggestions
 }
 
 func (o *SpellCorrector) score(cand candidate) float64 {
-	weights := []float64{5, 20, 2}
+	weights := []float64{10, 15, 5}
 	score := 0.0
 	for i := 1; i < 4; i++ {
 		grams := TokenNgrams(cand.tokens, i)
