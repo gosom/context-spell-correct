@@ -49,6 +49,13 @@ func getSuggestions(sc *spellcorrect.SpellCorrector) http.HandlerFunc {
 	}
 }
 
+func logRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 
 	file, err := os.Open("datasets/sentences.txt")
@@ -72,6 +79,7 @@ func main() {
 	fmt.Printf("time to train %s\n", t1.Sub(t0))
 
 	http.HandleFunc("/", getSuggestions(sc))
-	log.Fatal(http.ListenAndServe(":10000", nil))
+
+	log.Fatal(http.ListenAndServe(":10000", logRequest(http.DefaultServeMux)))
 
 }
