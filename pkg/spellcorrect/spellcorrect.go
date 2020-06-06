@@ -105,10 +105,12 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 	var allSuggestions [][]string
 	for i := range tokens {
 		allSuggestions = append(allSuggestions, nil)
-		allSuggestions[i] = append(allSuggestions[i], tokens[i])
 		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
 		for j := 0; j < len(suggestions) && j < 10; j++ {
 			allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+		}
+		if len(allSuggestions[i]) == 0 {
+			allSuggestions[i] = append(allSuggestions[i], tokens[i])
 		}
 	}
 	return allSuggestions
