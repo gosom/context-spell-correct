@@ -67,20 +67,30 @@ func TestGetSuggestionCandidates(t *testing.T) {
 		2: spell.SuggestionList{},
 	}
 
-	expected := []candidate{
-		// 0
-		candidate{[]string{"a", "2", "3"}},
-		candidate{[]string{"aa", "2", "3"}},
+	var allSuggestions [][]string
+	for i := range tokens {
+		allSuggestions = append(allSuggestions, nil)
+		allSuggestions[i] = append(allSuggestions[i], tokens[i])
+		suggestions, _ := sugMap[i]
+		for j := 0; j < len(suggestions) && j < 10; j++ {
+			allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+		}
 
-		// 1
-		candidate{[]string{"1", "b", "3"}},
-		candidate{[]string{"a", "b", "3"}},
-		candidate{[]string{"aa", "b", "3"}},
+	}
+
+	expected := [][]string{
+
+		[]string{"1", "2", "3"},
+		[]string{"a", "2", "3"},
+		[]string{"aa", "2", "3"},
+		[]string{"1", "b", "3"},
+		[]string{"a", "b", "3"},
+		[]string{"aa", "b", "3"},
 	}
 
 	sc := getSpellCorrector()
 
-	candidates := sc.getSuggestionCandidates(tokens, sugMap)
+	candidates := sc.getSuggestionCandidates(allSuggestions)
 
 	if len(candidates) != len(expected) {
 		t.Errorf("invalid length")
@@ -89,10 +99,10 @@ func TestGetSuggestionCandidates(t *testing.T) {
 
 	expect := make(map[uint64]bool)
 	for i := range expected {
-		expect[hashCandidate(expected[i])] = true
+		expect[hashTokens(expected[i])] = true
 	}
 	for i := range candidates {
-		if !expect[hashCandidate(candidates[i])] {
+		if !expect[hashTokens(candidates[i].tokens)] {
 			t.Errorf("%v not in expected", candidates[i].tokens)
 			return
 		}

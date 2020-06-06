@@ -1,24 +1,20 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/json-iterator/go"
+
 	"github.com/gosom/context-spell-correct/pkg/spellcorrect"
 )
 
-type Suggestion struct {
-	Score  float64
-	Tokens []string
-}
-
 type Result struct {
 	Query       string
-	Suggestions []Suggestion
+	Suggestions []spellcorrect.Suggestion
 }
 
 func getSuggestions(sc *spellcorrect.SpellCorrector) http.HandlerFunc {
@@ -32,20 +28,18 @@ func getSuggestions(sc *spellcorrect.SpellCorrector) http.HandlerFunc {
 
 		suggestions := sc.SpellCorrect(keys[0])
 
+		cnt := 10
+		if len(suggestions) < 10 {
+			cnt = len(suggestions)
+		}
 		result := Result{
 			Query:       keys[0],
-			Suggestions: make([]Suggestion, len(suggestions)),
-		}
-		for i := range suggestions {
-			result.Suggestions[i] = Suggestion{
-				Score:  suggestions[i].GetScore(),
-				Tokens: suggestions[i].GetTokens(),
-			}
+			Suggestions: suggestions[:cnt],
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		jsoniter.NewEncoder(w).Encode(result)
 	}
 }
 

@@ -15,15 +15,7 @@ import (
 
 type Suggestion struct {
 	score  float64
-	tokens []string
-}
-
-func (o *Suggestion) GetScore() float64 {
-	return o.score
-}
-
-func (o *Suggestion) GetTokens() []string {
-	return o.tokens
+	Tokens []string
 }
 
 type FrequencyContainer interface {
@@ -83,106 +75,83 @@ func (o *SpellCorrector) Train(in io.Reader, in2 io.Reader) error {
 	return nil
 }
 
-type candidate struct {
-	tokens []string
-}
-
-func hashCandidate(item candidate) uint64 {
+func hashTokens(tokens []string) uint64 {
 	h := fnv.New64a()
-	for i := range item.tokens {
-		h.Write([]byte(item.tokens[i]))
+	for i := range tokens {
+		h.Write([]byte(tokens[i]))
 	}
 	return h.Sum64()
 }
 
-func candidatesEqual(a, b candidate) bool {
-	if len(a.tokens) != len(b.tokens) {
-		return false
-	}
-	for i := range a.tokens {
-		if a.tokens[i] != b.tokens[i] {
-			return false
+func product(a []string, b []string) []string {
+	var items []string
+	for i := range a {
+		for j := range b {
+			items = append(items, a[i]+" "+b[j])
 		}
 	}
-	return true
+	return items
 }
 
-func (o *SpellCorrector) generateCandidates(tokens []string, candidates map[uint64]candidate, n int,
-	sugMap map[int]spell.SuggestionList) {
-	if n == len(tokens) {
-		return
+func combos(in [][]string) []string {
+	tmpP := in[len(in)-1]
+	for i := len(in) - 2; i >= 0; i-- {
+		tmpP = product(in[i], tmpP)
 	}
-
-	for i := 0; i < len(tokens); i++ {
-		suggestions := sugMap[i]
-		for _, sug := range suggestions {
-			b := append(tokens[:0:0], tokens...)
-			b[i] = sug.Word
-			cand := candidate{tokens: b}
-			candHash := hashCandidate(cand)
-			if _, ok := candidates[candHash]; !ok {
-				candidates[candHash] = cand
-			}
-			o.generateCandidates(b, candidates, n+1, sugMap)
-		}
-	}
+	return tmpP
 }
 
-func (o *SpellCorrector) getSuggestionCandidates(tokens []string, sugMap map[int]spell.SuggestionList) []candidate {
-
-	found := make(map[uint64]candidate)
-
-	o.generateCandidates(tokens, found, 0, sugMap)
-
-	candidates := make([]candidate, 0, len(found))
-	for _, v := range found {
-		candidates = append(candidates, v)
-	}
-	return candidates
-}
-
-func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	// maybe something more efficient
-	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
-	allSuggestions := make(map[int]spell.SuggestionList)
+func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
+	var allSuggestions [][]string
 	for i := range tokens {
+		allSuggestions = append(allSuggestions, nil)
+		allSuggestions[i] = append(allSuggestions[i], tokens[i])
 		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-		allSuggestions[i] = suggestions
+		for j := 0; j < len(suggestions) && j < 10; j++ {
+			allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+		}
 	}
-	candidates := o.getSuggestionCandidates(tokens, allSuggestions)
+	return allSuggestions
+}
 
-	suggestions := o.rank(candidates)
+func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Suggestion {
+	suggestionStrings := combos(allSuggestions)
+	seen := make(map[uint64]struct{}, len(suggestionStrings))
+	suggestions := make([]Suggestion, 0, len(suggestionStrings))
+	for i := range suggestionStrings {
+		sugTokens := strings.Split(suggestionStrings[i], " ")
+		h := hashTokens(sugTokens)
+		if _, ok := seen[h]; !ok {
+			seen[h] = struct{}{}
+			suggestions = append(suggestions,
+				Suggestion{
+					score:  o.score(sugTokens),
+					Tokens: sugTokens,
+				})
+		}
+	}
+	sort.SliceStable(suggestions, func(i, j int) bool {
+		return suggestions[i].score > suggestions[j].score
+	})
 	return suggestions
 }
 
-func (o *SpellCorrector) score(cand candidate) float64 {
-	weights := []float64{10, 15, 5}
+func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
+	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
+	allSuggestions := o.lookupTokens(tokens)
+	return o.getSuggestionCandidates(allSuggestions)
+}
+
+func (o *SpellCorrector) score(tokens []string) float64 {
+	weights := []float64{100, 15, 5}
 	score := 0.0
 	for i := 1; i < 4; i++ {
-		grams := TokenNgrams(cand.tokens, i)
+		grams := TokenNgrams(tokens, i)
 		sum1 := 0.
 		for i := range grams {
 			sum1 += o.frequencies.Get(grams[i])
 		}
 		score += weights[i-1] * sum1
 	}
-
 	return score
-}
-
-func (o *SpellCorrector) rank(candidates []candidate) []Suggestion {
-	var ans []Suggestion
-	ans = make([]Suggestion, 0, len(candidates))
-
-	for i := range candidates {
-		score := o.score(candidates[i])
-		ans = append(ans, Suggestion{score, candidates[i].tokens})
-	}
-	sort.SliceStable(ans, func(i, j int) bool {
-		return ans[i].score > ans[j].score
-	})
-	if len(ans) > 10 {
-		return ans[:10]
-	}
-	return ans
 }
