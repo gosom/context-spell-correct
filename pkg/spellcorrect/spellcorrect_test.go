@@ -11,7 +11,7 @@ import (
 func getSpellCorrector() *SpellCorrector {
 	tokenizer := NewSimpleTokenizer()
 	freq := NewFrequencies(0, 0)
-	sc := NewSpellCorrector(tokenizer, freq)
+	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5})
 	return sc
 }
 
@@ -102,8 +102,8 @@ func TestGetSuggestionCandidates(t *testing.T) {
 		expect[hashTokens(expected[i])] = true
 	}
 	for i := range candidates {
-		if !expect[hashTokens(candidates[i].tokens)] {
-			t.Errorf("%v not in expected", candidates[i].tokens)
+		if !expect[hashTokens(candidates[i].Tokens)] {
+			t.Errorf("%v not in expected", candidates[i].Tokens)
 			return
 		}
 	}

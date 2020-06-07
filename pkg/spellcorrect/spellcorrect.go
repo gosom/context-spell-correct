@@ -31,13 +31,15 @@ type SpellCorrector struct {
 	tokenizer   Tokenizer
 	frequencies FrequencyContainer
 	spell       *spell.Spell
+	weights     []float64
 }
 
-func NewSpellCorrector(tokenizer Tokenizer, frequencies FrequencyContainer) *SpellCorrector {
+func NewSpellCorrector(tokenizer Tokenizer, frequencies FrequencyContainer, weights []float64) *SpellCorrector {
 	ans := SpellCorrector{
 		tokenizer:   tokenizer,
 		frequencies: frequencies,
 		spell:       spell.New(),
+		weights:     weights,
 	}
 	return &ans
 }
@@ -145,7 +147,6 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 }
 
 func (o *SpellCorrector) score(tokens []string) float64 {
-	weights := []float64{100, 15, 5}
 	score := 0.0
 	for i := 1; i < 4; i++ {
 		grams := TokenNgrams(tokens, i)
@@ -153,7 +154,7 @@ func (o *SpellCorrector) score(tokens []string) float64 {
 		for i := range grams {
 			sum1 += o.frequencies.Get(grams[i])
 		}
-		score += weights[i-1] * sum1
+		score += o.weights[i-1] * sum1
 	}
 	return score
 }
