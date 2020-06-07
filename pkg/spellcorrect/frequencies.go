@@ -34,9 +34,6 @@ func (o *Frequencies) Load(tokens []string) error {
 	unigrams := make(map[uint64]int)
 	for i := range tokens {
 		hashes[i] = hashString(tokens[i])
-		if _, ok := unigrams[hashes[i]]; !ok {
-			unigrams[hashes[i]] = 0
-		}
 		unigrams[hashes[i]]++
 		if len(tokens[i]) < o.minWord {
 			bl[hashes[i]] = true
@@ -47,10 +44,9 @@ func (o *Frequencies) Load(tokens []string) error {
 		if v < o.minFreq {
 			bl[k] = true
 		} else {
-			o.uniGramProbs[k] = float64(v) / float64(len(unigrams))
+			o.uniGramProbs[k] = float64(v) / float64(len(tokens))
 		}
 	}
-	unigrams = nil
 
 	t2 := time.Now()
 	fmt.Println("time to hash and map", t2.Sub(t1))
