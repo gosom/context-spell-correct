@@ -22,12 +22,13 @@ func NewFrequencies(minWord, minFreq int) *Frequencies {
 		minWord:      minWord,
 		minFreq:      minFreq,
 		uniGramProbs: make(map[uint64]float64),
-		trie:         newWordTrie(),
+		trie:         newWordTrie(0),
 	}
 	return &ans
 }
 
 func (o *Frequencies) Load(tokens []string) error {
+	o.trie = newWordTrie(len(tokens))
 	t1 := time.Now()
 	hashes := make([]uint64, len(tokens), len(tokens))
 	bl := make(map[uint64]bool)
@@ -90,12 +91,12 @@ func (o *Frequencies) Get(tokens []string) float64 {
 type node struct {
 	freq     int
 	prob     float64
-	count    int
 	children map[uint64]*node
 }
 
-func newNode() *node {
+func newNode(freq int) *node {
 	n := node{
+		freq:     freq,
 		children: make(map[uint64]*node),
 	}
 	return &n
@@ -105,29 +106,30 @@ type wordTrie struct {
 	root *node
 }
 
-func newWordTrie() *wordTrie {
+func newWordTrie(lenTokens int) *wordTrie {
 	trie := wordTrie{
-		root: newNode(),
+		root: newNode(lenTokens),
 	}
 	return &trie
 }
 
+//The assumption that we first add the 1gram then the 2gram etc is made
 func (o *wordTrie) put(key ngram) {
 	current := o.root
-	previousCount := 0
 	for i := 0; i < len(key); i++ {
-		current.count++
-		previousCount = current.count
-		next, ok := current.children[key[i]]
-		if !ok {
-			next = newNode()
-			current.children[key[i]] = next
+		if i == len(key)-1 {
+			node, ok := current.children[key[i]]
+			if ok {
+				node.freq++
+			} else {
+				node = newNode(1)
+				current.children[key[i]] = node
+			}
+			node.prob = float64(node.freq) / float64(current.freq)
+		} else {
+			current = current.children[key[i]]
 		}
-		current = next
 	}
-
-	current.freq++
-	current.prob = float64(current.freq) / float64(previousCount)
 }
 
 func (o *wordTrie) search(key ngram) *node {
@@ -164,13 +166,8 @@ func ngrams(words []uint64, size int) <-chan ngram {
 	out := make(chan ngram)
 	go func() {
 		defer close(out)
-		offset := int(math.Floor(float64(size / 2)))
-		max := len(words)
-		for i := range words {
-			if i < offset || i+size-offset > max {
-				continue
-			}
-			out <- words[i-offset : i+size-offset]
+		for i := 0; i+size <= len(words); i++ {
+			out <- words[i : i+size]
 		}
 	}()
 	return out
