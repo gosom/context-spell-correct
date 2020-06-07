@@ -3,7 +3,6 @@ package spellcorrect
 import (
 	"bufio"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"sort"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/eskriett/spell"
+	"github.com/segmentio/fasthash/fnv1a"
 )
 
 type Suggestion struct {
@@ -73,16 +73,19 @@ func (o *SpellCorrector) Train(in io.Reader, in2 io.Reader) error {
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
+	t3 := time.Now()
+	fmt.Println("time to load dict", t3.Sub(t2))
 
 	return nil
 }
 
 func hashTokens(tokens []string) uint64 {
-	h := fnv.New64a()
+	h := fnv1a.Init64
+
 	for i := range tokens {
-		h.Write([]byte(tokens[i]))
+		h = fnv1a.AddString64(h, tokens[i])
 	}
-	return h.Sum64()
+	return h
 }
 
 func product(a []string, b []string) []string {
@@ -141,9 +144,19 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Su
 }
 
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
+	t0 := time.Now()
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
+	t1 := time.Now()
+	fmt.Println("time to tokenize", t1.Sub(t0))
 	allSuggestions := o.lookupTokens(tokens)
-	return o.getSuggestionCandidates(allSuggestions)
+	t2 := time.Now()
+	fmt.Println("time to lookup suggestions", t2.Sub(t1))
+	items := o.getSuggestionCandidates(allSuggestions)
+	t3 := time.Now()
+	fmt.Println("time to rank suggestions", t3.Sub(t2))
+
+	fmt.Println("time to spellcorrect", t3.Sub(t0))
+	return items
 }
 
 func (o *SpellCorrector) score(tokens []string) float64 {

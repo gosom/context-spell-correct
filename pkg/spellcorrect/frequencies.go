@@ -2,9 +2,10 @@ package spellcorrect
 
 import (
 	"fmt"
-	"hash/fnv"
 	"math"
 	"time"
+
+	"github.com/segmentio/fasthash/fnv1a"
 )
 
 type ngram []uint64
@@ -41,6 +42,7 @@ func (o *Frequencies) Load(tokens []string) error {
 			bl[hashes[i]] = true
 		}
 	}
+
 	for k, v := range unigrams {
 		if v < o.minFreq {
 			bl[k] = true
@@ -48,22 +50,23 @@ func (o *Frequencies) Load(tokens []string) error {
 			o.uniGramProbs[k] = float64(v) / float64(len(unigrams))
 		}
 	}
+	unigrams = nil
 
 	t2 := time.Now()
 	fmt.Println("time to hash and map", t2.Sub(t1))
 
 	for i := 1; i < 4; i++ {
 		grams := ngrams(hashes, i)
-		for j := range grams {
+		for _ngram := range grams {
 			add := true
-			for _, k := range grams[j] {
-				if bl[k] {
+			for j := range _ngram {
+				if bl[_ngram[j]] {
 					add = false
 					break
 				}
 			}
 			if add {
-				o.trie.put(grams[j])
+				o.trie.put(_ngram)
 			}
 		}
 	}
@@ -144,9 +147,7 @@ func (o *wordTrie) search(key ngram) *node {
 }
 
 func hashString(s string) uint64 {
-	h := fnv.New64a()
-	h.Write([]byte(s))
-	return h.Sum64()
+	return fnv1a.HashString64(s)
 }
 
 func TokenNgrams(words []string, size int) [][]string {
@@ -163,16 +164,18 @@ func TokenNgrams(words []string, size int) [][]string {
 	return out
 }
 
-func ngrams(words []uint64, size int) []ngram {
-	var out []ngram
-	offset := int(math.Floor(float64(size / 2)))
-	max := len(words)
-	for i := range words {
-		if i < offset || i+size-offset > max {
-			continue
+func ngrams(words []uint64, size int) <-chan ngram {
+	out := make(chan ngram)
+	go func() {
+		defer close(out)
+		offset := int(math.Floor(float64(size / 2)))
+		max := len(words)
+		for i := range words {
+			if i < offset || i+size-offset > max {
+				continue
+			}
+			out <- words[i-offset : i+size-offset]
 		}
-		gram := words[i-offset : i+size-offset]
-		out = append(out, gram)
-	}
+	}()
 	return out
 }
