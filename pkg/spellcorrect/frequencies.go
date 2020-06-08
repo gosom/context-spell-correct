@@ -2,7 +2,6 @@ package spellcorrect
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/segmentio/fasthash/fnv1a"
@@ -150,14 +149,8 @@ func hashString(s string) uint64 {
 
 func TokenNgrams(words []string, size int) [][]string {
 	var out [][]string
-	offset := int(math.Floor(float64(size / 2)))
-	max := len(words)
-	for i := range words {
-		if i < offset || i+size-offset > max {
-			continue
-		}
-		gram := words[i-offset : i+size-offset]
-		out = append(out, gram)
+	for i := 0; i+size <= len(words); i++ {
+		out = append(out, words[i:i+size])
 	}
 	return out
 }
