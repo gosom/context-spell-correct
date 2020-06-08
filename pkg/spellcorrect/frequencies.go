@@ -115,20 +115,18 @@ func newWordTrie(lenTokens int) *wordTrie {
 //The assumption that we first add the 1gram then the 2gram etc is made
 func (o *wordTrie) put(key ngram) {
 	current := o.root
-	for i := 0; i < len(key); i++ {
-		if i == len(key)-1 {
-			node, ok := current.children[key[i]]
-			if ok {
-				node.freq++
-			} else {
-				node = newNode(1)
-				current.children[key[i]] = node
-			}
-			node.prob = float64(node.freq) / float64(current.freq)
-		} else {
-			current = current.children[key[i]]
-		}
+	var i int
+	for ; i < len(key)-1; i++ {
+		current = current.children[key[i]]
 	}
+	node, ok := current.children[key[i]]
+	if ok {
+		node.freq++
+	} else {
+		node = newNode(1)
+		current.children[key[i]] = node
+	}
+	node.prob = float64(node.freq) / float64(current.freq)
 }
 
 func (o *wordTrie) search(key ngram) *node {
