@@ -111,6 +111,6 @@ Even better make a pull request
 - https://github.com/eskriett/spell
 - https://github.com/json-iterator/go
 - https://github.com/qiangxue/go-env
-
-See also datasets/<langCode>/README.md for the dataset's citation
+- all the package maintainers that are indirect dependencies
+- See also datasets/<langCode>/README.md for the dataset's citation
 
