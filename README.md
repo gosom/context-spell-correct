@@ -65,7 +65,7 @@ Bechmarks run with vegeta:
 
 (100 reqs per second)
 ```
-echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vegeta attack -duration=120s -rate 1000 -output=attack-1.bin
+echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vegeta attack -duration=120s -rate 1000 -output=attack-100.bin
 ```
 
 ![alt tag](https://raw.githubusercontent.com/gosom/context-spell-correct/master/vegeta-plot-100.png)
@@ -75,7 +75,7 @@ echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vege
 (1000 reqs per second)
 
 ```
-echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vegeta attack -duration=120s -rate 1000 -output=attack-1.bin
+echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vegeta attack -duration=120s -rate 1000 -output=attack-1000.bin
 ```
 
 ![alt tag](https://raw.githubusercontent.com/gosom/context-spell-correct/master/vegeta-plot-1000.png)
