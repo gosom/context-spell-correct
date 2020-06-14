@@ -1,7 +1,6 @@
 package spellcorrect
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -13,65 +12,56 @@ func TestFrequencies(t *testing.T) {
 		return
 	}
 
-	prob := freq.Get([]string{"I"})
-	fmt.Println("I", prob)
-	prob2 := freq.Get([]string{"I", "code"})
-	fmt.Println("Second", prob2)
+	if prob := freq.Get([]string{"I"}); prob < 0.3 || prob > 0.34 {
+		t.Errorf("unigram prob wrong")
+		return
+	}
 
-	prob3 := freq.Get([]string{"I", "program", "go"})
-	fmt.Println(prob3)
+	if prob := freq.Get([]string{"I", "code"}); prob < 0.3 || prob > 0.34 {
+		t.Errorf("bigram prob wrong")
+		return
+	}
 
-	/*
-		if prob := freq.GetProbability([]string{"I"}); prob != 110 || prob > 0.34 && prob < 0.33 {
-			t.Errorf("calculated invalid probability %f", prob)
-			return
-		}
+	if prob := freq.Get([]string{"I", "program", "go"}); prob < 0.99 || prob > 1 {
+		t.Errorf("trigram prob wrong")
+		return
+	}
 
-		arithm := freq.Get([]string{"I", "program"})
-		fmt.Println(arithm)
-		par := freq.Get([]string{"I"})
-		fmt.Println(par)
-
-		if prob := freq.GetProbability([]string{"I", "program"}); prob != 0 {
-			t.Errorf("calculated invalid probabiliyu %f", prob)
-		}
-	*/
 }
 
-/*
 func TestWordTrie(t *testing.T) {
-	trie := newWordTrie()
-
 	words := []uint64{
 		1, 2, 3, 4, 5, 6, 1, 2,
 	}
 
+	trie := newWordTrie(len(words))
+
 	unigrams := ngrams(words, 1)
-	for i := range unigrams {
-		trie.put(unigrams[i])
+	for unigram := range unigrams {
+		trie.put(unigram)
 	}
 
 	s := ngram{uint64(2)}
-	if freq := trie.search(s); freq != 2 {
+	if n := trie.search(s); n.freq != 2 {
 		t.Errorf("error computing freq")
 		return
 	}
-	if freq := trie.search(ngram{uint64(79)}); freq != 0 {
-		t.Errorf("error computing freq")
+
+	if n := trie.search(ngram{uint64(79)}); n != nil {
+		t.Errorf("error searching not existant")
 		return
 	}
 	bigrams := ngrams(words, 2)
-	for i := range bigrams {
-		trie.put(bigrams[i])
+	for bigram := range bigrams {
+		trie.put(bigram)
 	}
 
-	if freq := trie.search(ngram{uint64(1)}); freq != 2 {
+	if n := trie.search(ngram{uint64(1)}); n.freq != 2 {
 		t.Errorf("error computing freq")
 		return
 	}
-	if freq := trie.search(ngram{uint64(1), uint64(2)}); freq != 2 {
+	if n := trie.search(ngram{uint64(1), uint64(2)}); n.freq != 2 {
 		t.Errorf("error computing freq")
 		return
 	}
 }
-*/

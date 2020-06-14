@@ -2,7 +2,6 @@ package main
 
 import (
 	"compress/gzip"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -45,10 +44,11 @@ func main() {
 	weights := []float64{cfg.UnigramWeight, cfg.BigramWeight, cfg.TrigramWeight}
 	sc := spellcorrect.NewSpellCorrector(tokenizer, freq, weights)
 
+	log.Printf("starting training...")
 	t0 := time.Now()
 	sc.Train(gz, gz2)
 	t1 := time.Now()
-	fmt.Printf("time to train %s\n", t1.Sub(t0))
+	log.Printf("ready[%s]\n", t1.Sub(t0))
 	file.Close()
 	gz.Close()
 	file2.Close()

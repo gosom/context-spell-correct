@@ -26,13 +26,57 @@ func TestTrain(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if prob := sc.frequencies.Get([]string{"golang"}); prob != 0.5 {
+	if prob := sc.frequencies.Get([]string{"golang"}); prob > 0.34 && prob < 0.33 {
 		t.Errorf("invalid prob %f", prob)
 		return
 	}
 
 	suggestions, _ := sc.spell.Lookup("gola", spell.SuggestionLevel(spell.LevelAll))
-	fmt.Println(suggestions)
+	if len(suggestions) != 2 {
+		t.Errorf("calculated wrong suggestions")
+		return
+	}
+	expected := map[string]bool{
+		"golang": true, "goland": true,
+	}
+	for i := range suggestions {
+		if !expected[suggestions[i].Word] {
+			t.Errorf("missing suggestion")
+			return
+		}
+	}
+}
+
+func BenchmarkProduct(b *testing.B) {
+	left := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
+	right := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		product(left, right)
+	}
+}
+
+func BenchmarkCombos(b *testing.B) {
+	tokens := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
+	var in [][]string
+	for i := range tokens {
+		var sug []string
+		if i != 0 && i < len(tokens)/2 {
+			for k := 1; k <= i; k++ {
+				sug = append(sug, strings.Repeat(fmt.Sprintf("%d", i), k))
+			}
+		}
+		if len(sug) == 0 {
+			sug = append(sug, tokens[i])
+		}
+		in = append(in, sug)
+	}
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = combos(in)
+	}
 }
 
 func TestSpellCorrect(t *testing.T) {
@@ -50,7 +94,14 @@ func TestSpellCorrect(t *testing.T) {
 	s1 := "restaurant in Bonn"
 
 	suggestions := sc.SpellCorrect(s1)
-	fmt.Println(suggestions)
+	if len(suggestions) != 1 {
+		t.Errorf("error getting suggestion for not existant")
+		return
+	}
+	if suggestions[0].score != 0 {
+		t.Errorf("error getting suggestion for not existant (different)")
+		return
+	}
 }
 
 func TestGetSuggestionCandidates(t *testing.T) {

@@ -1,9 +1,6 @@
 package spellcorrect
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -28,7 +25,6 @@ func NewFrequencies(minWord, minFreq int) *Frequencies {
 
 func (o *Frequencies) Load(tokens []string) error {
 	o.trie = newWordTrie(len(tokens))
-	t1 := time.Now()
 	hashes := make([]uint64, len(tokens), len(tokens))
 	bl := make(map[uint64]bool)
 	unigrams := make(map[uint64]int)
@@ -48,9 +44,6 @@ func (o *Frequencies) Load(tokens []string) error {
 		}
 	}
 
-	t2 := time.Now()
-	fmt.Println("time to hash and map", t2.Sub(t1))
-
 	for i := 1; i < 4; i++ {
 		grams := ngrams(hashes, i)
 		for _ngram := range grams {
@@ -66,8 +59,6 @@ func (o *Frequencies) Load(tokens []string) error {
 			}
 		}
 	}
-	t3 := time.Now()
-	fmt.Println("Time to add to trie", t3.Sub(t2))
 
 	return nil
 }

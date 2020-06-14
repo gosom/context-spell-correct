@@ -2,8 +2,8 @@ package spellcorrect
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -51,10 +51,10 @@ func (o *SpellCorrector) Train(in io.Reader, in2 io.Reader) error {
 		return err
 	}
 	t1 := time.Now()
-	fmt.Println("time load tokens", t1.Sub(t0), len(tokens))
+	log.Println("time load tokens", t1.Sub(t0), len(tokens))
 	o.frequencies.Load(tokens)
 	t2 := time.Now()
-	fmt.Println("time to load frequencies", t2.Sub(t1))
+	log.Println("time to load frequencies", t2.Sub(t1))
 
 	scanner := bufio.NewScanner(in2)
 	for scanner.Scan() {
@@ -73,15 +73,12 @@ func (o *SpellCorrector) Train(in io.Reader, in2 io.Reader) error {
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-	t3 := time.Now()
-	fmt.Println("time to load dict", t3.Sub(t2))
 
 	return nil
 }
 
 func hashTokens(tokens []string) uint64 {
 	h := fnv1a.Init64
-
 	for i := range tokens {
 		h = fnv1a.AddString64(h, tokens[i])
 	}
@@ -89,7 +86,8 @@ func hashTokens(tokens []string) uint64 {
 }
 
 func product(a []string, b []string) []string {
-	var items []string
+	size := len(a) * len(b)
+	items := make([]string, 0, size)
 	for i := range a {
 		for j := range b {
 			items = append(items, a[i]+" "+b[j])
@@ -107,7 +105,7 @@ func combos(in [][]string) []string {
 }
 
 func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
-	var allSuggestions [][]string
+	allSuggestions := make([][]string, 0, len(tokens))
 	for i := range tokens {
 		allSuggestions = append(allSuggestions, nil)
 		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
@@ -144,18 +142,9 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Su
 }
 
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	t0 := time.Now()
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
-	t1 := time.Now()
-	fmt.Println("time to tokenize", t1.Sub(t0))
 	allSuggestions := o.lookupTokens(tokens)
-	t2 := time.Now()
-	fmt.Println("time to lookup suggestions", t2.Sub(t1))
 	items := o.getSuggestionCandidates(allSuggestions)
-	t3 := time.Now()
-	fmt.Println("time to rank suggestions", t3.Sub(t2))
-
-	fmt.Println("time to spellcorrect", t3.Sub(t0))
 	return items
 }
 
