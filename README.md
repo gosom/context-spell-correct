@@ -57,6 +57,32 @@ In the datasets directory we added examples for English and German.
 
 Datasets source is referenced in the README.md in the language's folder
 
+## Benchmarks 
+
+Here is a naive benchmark in my laptop (Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz)
+
+Bechmarks run with vegeta:
+
+(100 reqs per second)
+```
+echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vegeta attack -duration=120s -rate 1000 -output=attack-1.bin
+```
+
+![alt tag](https://raw.githubusercontent.com/gosom/context-spell-correct/master/vegeta-plot-100.png)
+
+
+
+(1000 reqs per second)
+
+```
+echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vegeta attack -duration=120s -rate 1000 -output=attack-1.bin
+```
+
+![alt tag](https://raw.githubusercontent.com/gosom/context-spell-correct/master/vegeta-plot-1000.png)
+
+
+
+
 
 #### Special Thanks
 
