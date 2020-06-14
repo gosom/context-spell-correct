@@ -4,7 +4,13 @@ Performs context based spelling correction.
 
 Based on: https://arxiv.org/pdf/1910.11242.pdf
 
-work in progress. NOT yet production ready
+###Sample Use Case
+
+You have a search engine (like Elastic search) and your user perform queries.
+If the user query does not contain any results you could use this to get 
+a list of possible other queries and implement a functionality similar
+to other search engines `showing results for:`
+
 
 ## How to use
 
