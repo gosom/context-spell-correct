@@ -93,18 +93,24 @@ echo "GET http://localhost:10000/?query=scored%20awsome%20bicicle%20kikc" | vege
 
 ![alt tag](https://raw.githubusercontent.com/gosom/context-spell-correct/master/vegeta-plot-1000.png)
 
+### Disclaimer
 
-
+This project is work in progress. 
+If you find bugs or want to propose improvements feel free to create an Issue [https://github.com/gosom/context-spell-correct/issues]
+Even better make a pull request
 
 
 #### Special Thanks
 
 - https://github.com/Oikopedo
 
-- https://arxiv.org/pdf/1910.11242.pdf
+### References
 
+- https://arxiv.org/pdf/1910.11242.pdf
 - https://github.com/wolfgarbe/SymSpell
 - https://github.com/eskriett/spell
 - https://github.com/json-iterator/go
 - https://github.com/qiangxue/go-env
+
+See also datasets/<langCode>/README.md for the dataset's citation
 
