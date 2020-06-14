@@ -13,6 +13,11 @@ to other search engines
 
 `showing results for:`
 
+For this use case, ideally, you should train the model using your user's queries that produced results.
+
+The datasets that are provided in the repository are from wikipedia or from news,
+because of privacy reasons. Although, even with these datasets results could be satisfactory.
+
 
 ## How to use
 
