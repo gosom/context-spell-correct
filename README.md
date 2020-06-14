@@ -23,13 +23,13 @@ Example assuming that the train files are in the datasets/ folder.
 
 
 1. `make build`
-2. `SC_ADDR=:10000 SC_SENTENCES_PATH=datasets/sentences.txt2.gz SC_DICT_PATH=datasets/de-100k.txt.gz ./spell-correct-server`
+2. `SC_ADDR=:10000 SC_SENTENCES_PATH=datasets/en/sentences.txt.gz SC_DICT_PATH=datasets/en/freq-dict.txt.gz ./spell-correct-server`
 
 It starts a web server listening by default on port 10.000
 
 
 ```
-curl  GET 'http://localhost:10000?query=piza%20in%20bonn'
+curl 'http://localhost:10000/?query=scred%20a%20bicycle%20kikc'
 ```
 
 It gives you back the suggestions. The suggestions are ordered with the ones the algorithm decides are most 
@@ -39,8 +39,23 @@ relevant first.
 
 Example:
 
-1. make docker-build
-2. docker run  -p 10000:10000 -v /home/giorgos/datasets:/datasets -e SC_SENTENCES_PATH=/datasets/sentences.txt2 -e SC_DICT_PATH=/datasets/de-100k.txt spell-correctort
+```
+make docker-build
+docker run  -p 10000:10000 -v /home/gosom/datasets:/datasets -e SC_SENTENCES_PATH=/datasets/en/sentences.txt.gz -e SC_DICT_PATH=/datasets/en/freq-dict.txt.gz spell-correctort
+```
+
+
+## Supported Languages
+
+The method is language independent.
+All you need is two files used for training:
+
+- file containing sentences for the languages
+- file containing the word frequencies for the languages
+
+In the datasets directory we added examples for English and German.
+
+Datasets source is referenced in the README.md in the language's folder
 
 
 #### Special Thanks
